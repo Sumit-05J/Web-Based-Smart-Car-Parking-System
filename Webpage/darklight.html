@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Parking System</title>
+  <style>
+    :root {
+      --bg: radial-gradient(circle at top, #111827 0, #020617 48%, #000000 100%);
+      --text: #f9fafb;
+      --subtle: #9ca3af;
+
+      --card-bg: rgba(6, 12, 20, 0.96);
+      --card-border: rgba(45, 212, 191, 0.55);
+      --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+
+      --pill-online-bg: rgba(45, 212, 191, 0.14);
+      --pill-online-border: rgba(45, 212, 191, 0.7);
+      --pill-online-text: #5eead4;
+      --pill-offline-bg: rgba(248, 113, 113, 0.13);
+      --pill-offline-border: rgba(248, 113, 113, 0.6);
+      --pill-offline-text: #fb7185;
+
+      --accent-main: #22c55e;
+      --accent-secondary: #0ea5e9;
+      --accent-reserved: #eab308;
+      --accent-occupied: #ef4444;
+
+      --button-bg: linear-gradient(135deg, #22c55e, #0ea5e9);
+      --button-bg-hover: linear-gradient(135deg, #16a34a, #0284c7);
+      --button-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
+    }
+
+    body.light-theme {
+      --bg: radial-gradient(circle at top, #ecfdf3 0, #e0f2fe 40%, #e5e7eb 100%);
+      --text: #020617;
+      --subtle: #4b5563;
+
+      --card-bg: rgba(255, 255, 255, 0.98);
+      --card-border: rgba(45, 212, 191, 0.8);
+      --card-shadow: 0 14px 30px rgba(148, 163, 184, 0.35);
+
+      --pill-online-bg: rgba(34, 197, 94, 0.1);
+      --pill-online-border: rgba(22, 163, 74, 0.7);
+      --pill-online-text: #15803d;
+      --pill-offline-bg: rgba(220, 38, 38, 0.12);
+      --pill-offline-border: rgba(220, 38, 38, 0.6);
+      --pill-offline-text: #b91c1c;
+
+      --button-bg: linear-gradient(135deg, #16a34a, #0ea5e9);
+      --button-bg-hover: linear-gradient(135deg, #15803d, #0284c7);
+      --button-shadow: 0 10px 25px rgba(22, 163, 74, 0.35);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.4s ease, color 0.3s ease;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 10px 0 18px;
+    }
+
+    .header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      background: linear-gradient(120deg, #bbf7d0, #22c55e, #0ea5e9, #2dd4bf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header p {
+      color: var(--subtle);
+      margin-top: 6px;
+      font-size: 0.95rem;
+    }
+
+    .connection-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .connection-pill .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      animation: pulse 2s infinite;
+    }
+
+    .connected {
+      background: var(--pill-online-bg);
+      color: var(--pill-online-text);
+      border: 1px solid var(--pill-online-border);
+      box-shadow: 0 0 12px rgba(45, 212, 191, 0.5);
+    }
+    .connected .dot { background: #2dd4bf; }
+
+    .disconnected {
+      background: var(--pill-offline-bg);
+      color: var(--pill-offline-text);
+      border: 1px solid var(--pill-offline-border);
+      box-shadow: 0 0 8px rgba(248, 113, 113, 0.45);
+    }
+    .disconnected .dot { background: var(--accent-occupied); }
+
+    @keyframes pulse {
+      0%,100%{transform:scale(1);opacity:1}
+      50%{transform:scale(1.2);opacity:.5}
+    }
+
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar button {
+      border-radius: 999px;
+      border: 1px solid rgba(45, 212, 191, 0.65);
+      background: radial-gradient(circle at top left, rgba(45,212,191,0.25), rgba(15,23,42,0.9));
+      color: var(--text);
+      padding: 7px 16px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border 0.2s ease, filter 0.2s ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+    }
+
+    .toolbar button:hover {
+      background: radial-gradient(circle at top left, rgba(45,212,191,0.4), rgba(15,23,42,0.95));
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow:
+        0 0 16px rgba(45, 212, 191, 0.85),
+        0 12px 26px rgba(15,23,42,0.9);
+      transform: translateY(-1px);
+      filter: saturate(1.2);
+    }
+
+    .toolbar button:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: 0 5px 13px rgba(15, 23, 42, 0.8);
+      filter: saturate(0.9);
+    }
+
+    body.light-theme .toolbar button {
+      background: radial-gradient(circle at top left, rgba(45,212,191,0.18), #eef2ff);
+      border-color: rgba(45, 212, 191, 0.9);
+      box-shadow: 0 8px 18px rgba(148, 163, 184, 0.4);
+    }
+    body.light-theme .toolbar button:hover {
+      background: radial-gradient(circle at top left, rgba(45,212,191,0.4), #e0f2fe);
+    }
+
+    .last-update {
+      font-size: 0.8rem;
+      color: var(--subtle);
+    }
+
+    .dashboard {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:16px;
+      margin-bottom:20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius:18px;
+      padding:16px 18px;
+      border:1px solid var(--card-border);
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
+      transition: border 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+    }
+
+    .card::before {
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background:
+        radial-gradient(circle at top left, rgba(45,212,191,0.32), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(14,165,233,0.22), transparent 55%);
+      opacity:0;
+      transition: opacity 0.35s ease;
+      pointer-events:none;
+      mix-blend-mode: screen;
+    }
+
+    .card:hover {
+      border-color: rgba(56, 189, 248, 0.95);
+      box-shadow:
+        0 0 20px rgba(45, 212, 191, 0.75),
+        0 18px 40px rgba(0, 0, 0, 0.85);
+      transform: translateY(-2px);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card h2 {
+      font-size:2rem;
+      font-weight:700;
+      margin-bottom:4px;
+      background:linear-gradient(135deg,#bbf7d0,#22c55e,#0ea5e9);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+
+    .card p {
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing: .08em;
+      color:var(--subtle);
+    }
+
+    .layout {
+      display:grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
+      gap: 18px;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .parking-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:18px;
+      margin-bottom:10px;
+    }
+
+    .slot-card {
+      background:var(--card-bg);
+      border-radius:20px;
+      padding:18px 20px;
+      border:1px solid rgba(45, 212, 191, 0.5);
+      box-shadow: var(--card-shadow);
+      transition: transform .18s ease, box-shadow .22s ease, border .22s ease, filter 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slot-card::after {
+      content:"";
+      position:absolute;
+      inset:0;
+      background: radial-gradient(circle at top right, rgba(45,212,191,0.22), transparent 60%);
+      opacity:0;
+      transition:opacity .22s ease;
+      pointer-events:none;
+      mix-blend-mode: screen;
+    }
+
+    .slot-card:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        0 0 22px rgba(45, 212, 191, 0.9),
+        0 20px 45px rgba(0,0,0,0.9);
+      border-color: rgba(56, 189, 248, 0.95);
+      filter: saturate(1.1);
+    }
+    .slot-card:hover::after {
+      opacity: 1;
+    }
+
+    .slot-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+    }
+
+    .badge {
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:.75rem;
+      font-weight:600;
+      backdrop-filter: blur(8px);
+    }
+    .badge-free {
+      background:rgba(34,197,94,.18);
+      color:#bbf7d0;
+      border:1px solid rgba(22,163,74,.7);
+    }
+    .badge-occupied {
+      background:rgba(239,68,68,.18);
+      color:#fecaca;
+      border:1px solid rgba(248,113,113,.8);
+    }
+    .badge-reserved {
+      background:rgba(234,179,8,.18);
+      color:#fef3c7;
+      border:1px solid rgba(234,179,8,.85);
+    }
+
+    .slot-visual {
+      text-align:center;
+      font-size:2.5rem;
+      margin:10px 0 12px;
+    }
+
+    .slot-meta {
+      font-size:.8rem;
+      color:var(--subtle);
+      margin-bottom:8px;
+    }
+
+    .action-btn {
+      width:100%;
+      border:none;
+      border-radius:999px;
+      padding:9px 12px;
+      font-size:.83rem;
+      font-weight:600;
+      cursor:pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.15s ease, filter 0.2s ease;
+    }
+
+    .btn-reserve {
+      background:var(--button-bg);
+      color:#f9fafb;
+      box-shadow: var(--button-shadow);
+    }
+    .btn-reserve:hover {
+      background:var(--button-bg-hover);
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 18px rgba(34, 197, 94, 0.8),
+        0 14px 32px rgba(15, 23, 42, 0.95);
+      filter: saturate(1.15);
+    }
+    .btn-reserve:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 7px 16px rgba(15, 23, 42, 0.8);
+      filter: saturate(0.95);
+    }
+
+    .btn-cancel {
+      background:rgba(248,113,113,.13);
+      color:#fecaca;
+      border:1px solid rgba(248,113,113,.8);
+      box-shadow: 0 10px 24px rgba(248, 113, 113, 0.4);
+    }
+    .btn-cancel:hover {
+      background:rgba(239,68,68,.9);
+      color:#fee2e2;
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 18px rgba(248,113,113,0.85),
+        0 14px 28px rgba(15,23,42,0.9);
+    }
+    .btn-cancel:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 7px 16px rgba(148,27,37,0.8);
+    }
+
+    .btn-disabled {
+      background:rgba(15,23,42,.92);
+      color:#6b7280;
+      border:1px dashed rgba(75,85,99,.9);
+      cursor:not-allowed;
+      box-shadow:none;
+      opacity:0.9;
+    }
+
+    /* mini map row */
+    .mini-map-title {
+      font-size:0.9rem;
+      font-weight:600;
+      margin-bottom:8px;
+      color:var(--subtle);
+    }
+    .mini-map {
+      display:flex;
+      justify-content:center;
+      gap:12px;
+      margin-bottom:8px;
+    }
+    .mini-slot {
+      border-radius:10px;
+      padding:10px 12px;
+      text-align:center;
+      font-size:0.8rem;
+      cursor:pointer;
+      min-width:52px;
+      font-weight:600;
+      transition: transform .15s ease, box-shadow .18s ease, border .18s ease, background 0.18s ease, color 0.18s ease;
+      border:1px solid transparent;
+      background: transparent;
+      color: var(--text);
+    }
+    .mini-free {
+      background:rgba(34,197,94,0.18);
+      border-color:rgba(34,197,94,0.95);
+      box-shadow:0 0 10px rgba(34,197,94,0.45);
+    }
+    .mini-res {
+      background:rgba(234,179,8,0.18);
+      border-color:rgba(234,179,8,0.98);
+      box-shadow:0 0 10px rgba(234,179,8,0.5);
+    }
+    .mini-occ {
+      background:rgba(239,68,68,0.2);
+      border-color:rgba(248,113,113,0.98);
+      box-shadow:0 0 10px rgba(248,113,113,0.6);
+    }
+
+    .mini-slot:hover {
+      transform:translateY(-1px);
+      box-shadow:
+        0 0 16px rgba(45, 212, 191, 0.9),
+        0 10px 22px rgba(0,0,0,.7);
+    }
+    .mini-legend {
+      display:flex;
+      justify-content:center;
+      gap:16px;
+      font-size:0.78rem;
+      color:var(--subtle);
+      margin-top:4px;
+    }
+    .mini-dot {
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      display:inline-block;
+      margin-right:4px;
+    }
+    .legend-free    { background:rgba(34,197,94,.95); }
+    .legend-res     { background:rgba(234,179,8,.95); }
+    .legend-occ     { background:rgba(239,68,68,.95); }
+
+    /* activity log */
+    .log-title {
+      font-size:0.9rem;
+      font-weight:600;
+      margin-bottom:8px;
+      color:var(--subtle);
+    }
+    .log-list {
+      max-height:190px;
+      overflow-y:auto;
+      font-size:0.78rem;
+      list-style:none;
+      padding-left:0;
+      scrollbar-width: thin;
+    }
+    .log-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .log-list::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,0.7);
+      border-radius: 999px;
+    }
+    .log-item {
+      margin-bottom:4px;
+      border-bottom:1px dashed rgba(148,163,184,.3);
+      padding-bottom:2px;
+    }
+    .log-time { color:var(--subtle); margin-right:4px; }
+
+    /* toast */
+    #toast {
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      background:var(--card-bg);
+      color:var(--text);
+      border-radius:10px;
+      padding:10px 14px;
+      font-size:0.8rem;
+      border:1px solid var(--card-border);
+      box-shadow:0 8px 24px rgba(0,0,0,.6);
+      opacity:0;
+      pointer-events:none;
+      transform:translateY(20px);
+      transition:opacity .3s ease, transform .3s ease;
+      z-index:999;
+    }
+    #toast.show {
+      opacity:1;
+      pointer-events:auto;
+      transform:translateY(0);
+    }
+    #toast.success { border-color:rgba(34,197,94,.9); }
+    #toast.error   { border-color:rgba(248,113,113,.95); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header class="header">
+      <h1>Smart Parking System</h1>
+      <p>IoT-Enabled Parking with Real-Time Monitoring &amp; Reservation</p>
+      <div id="connectionStatus" class="connection-pill disconnected">
+        <span class="dot"></span><span>Disconnected</span>
+      </div>
+    </header>
+
+    <div class="top-bar">
+      <div class="toolbar">
+        <button id="themeToggle">🌗 Theme</button>
+        <button onclick="downloadReport()">📄 Download Summary</button>
+      </div>
+      <div class="last-update" id="lastUpdate">
+        Last update: --
+      </div>
+    </div>
+
+    <section class="dashboard">
+      <div class="card"><h2 id="totalSlots">4</h2><p>Total Slots</p></div>
+      <div class="card"><h2 id="freeSlots">-</h2><p>Free</p></div>
+      <div class="card"><h2 id="occupiedSlots">-</h2><p>Occupied</p></div>
+      <div class="card"><h2 id="reservedSlots">-</h2><p>Reserved</p></div>
+      <div class="card"><h2 id="totalCars">-</h2><p>Total Cars</p></div>
+      <div class="card"><h2 id="avgStay">-</h2><p>Avg Stay (min)</p></div>
+    </section>
+
+    <div class="layout">
+      <section>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="mini-map-title">Parking Layout (Top View)</div>
+          <div class="mini-map" id="miniMap">
+            <!-- mini slots via JS -->
+          </div>
+          <div class="mini-legend">
+            <span><span class="mini-dot legend-free"></span>Free</span>
+            <span><span class="mini-dot legend-res"></span>Reserved</span>
+            <span><span class="mini-dot legend-occ"></span>Occupied</span>
+          </div>
+        </div>
+        <section id="parkingSlots" class="parking-grid"></section>
+      </section>
+
+      <aside>
+        <div class="card">
+          <div class="log-title">Activity Log</div>
+          <ul id="logList" class="log-list">
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    const ESP_IP = "http://10.245.36.163";
+
+    let lastSlots = [];
+    let latestSlots = [];
+    let latestSummary = { totalCars: 0, avgStayMinutes: 0 };
+    let toastTimeout = null;
+
+    function showToast(message, type = "success") {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = "";
+      toast.classList.add(type);
+      toast.classList.add("show");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2600);
+    }
+
+    function addLog(message) {
+      const list = document.getElementById("logList");
+      const li = document.createElement("li");
+      li.className = "log-item";
+      const t = new Date().toLocaleTimeString();
+      li.innerHTML = `<span class="log-time">[${t}]</span>${message}`;
+      list.insertBefore(li, list.firstChild);
+      while (list.children.length > 30) {
+        list.removeChild(list.lastChild);
+      }
+    }
+
+    function detectSlotEvents(oldSlots, newSlots) {
+      if (!oldSlots || oldSlots.length !== newSlots.length) return;
+      for (let i = 0; i < newSlots.length; i++) {
+        const o = oldSlots[i] || {};
+        const n = newSlots[i] || {};
+        const id = n.id || (i + 1);
+
+        if (!o.occupied && n.occupied) {
+          addLog(`Car parked in Slot ${id}`);
+        }
+        if (o.occupied && !n.occupied) {
+          addLog(`Car left Slot ${id}`);
+        }
+        if (!o.reserved && n.reserved) {
+          addLog(`Slot ${id} reserved`);
+        }
+        if (o.reserved && !n.reserved && !n.occupied) {
+          addLog(`Reservation cancelled on Slot ${id}`);
+        }
+      }
+    }
+    async function fetchStatus() {
+      try {
+        const res = await fetch(`${ESP_IP}/status`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        const slots = data.slots || [];
+
+        setConnection(true);
+        document.getElementById("lastUpdate").textContent =
+          "Last update: " + new Date().toLocaleTimeString();
+
+        detectSlotEvents(lastSlots, slots);
+        lastSlots = JSON.parse(JSON.stringify(slots));
+        latestSlots = slots;
+
+        updateSlots(slots);
+        updateMiniMap(slots);
+      } catch (e) {
+        setConnection(false);
+      }
+    }
+
+    async function fetchSummary() {
+      try {
+        const res = await fetch(`${ESP_IP}/summary`);
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        latestSummary = data;
+
+        document.getElementById("totalCars").textContent =
+          data.totalCars ?? 0;
+        document.getElementById("avgStay").textContent =
+          (data.avgStayMinutes ?? 0).toFixed(1);
+      } catch (e) {
+      }
+    }
+
+    function setConnection(ok) {
+      const el = document.getElementById("connectionStatus");
+      el.className = ok
+        ? "connection-pill connected"
+        : "connection-pill disconnected";
+      el.innerHTML = ok
+        ? "<span class='dot'></span><span>Online</span>"
+        : "<span class='dot'></span><span>Disconnected</span>";
+    }
+
+    function updateSlots(slots) {
+      const area = document.getElementById("parkingSlots");
+      area.innerHTML = "";
+
+      const occ = slots.filter(s => s.occupied).length;
+      const res = slots.filter(s => s.reserved).length;
+      const free = slots.length - occ - res;
+
+      document.getElementById("totalSlots").textContent = slots.length;
+      document.getElementById("freeSlots").textContent = free;
+      document.getElementById("occupiedSlots").textContent = occ;
+      document.getElementById("reservedSlots").textContent = res;
+
+      slots.forEach(slot => {
+        const card = document.createElement("div");
+        card.className = "slot-card";
+
+        const isOcc = slot.occupied;
+        const isRes = slot.reserved;
+        const isReservable = slot.id === 1 || slot.id === 2;
+
+        const badgeClass = isOcc
+          ? "badge-occupied"
+          : isRes
+          ? "badge-reserved"
+          : "badge-free";
+
+        const label = isOcc
+          ? "Occupied"
+          : isRes
+          ? "Reserved"
+          : "Free";
+
+        const icon = isOcc ? "🚗" : isRes ? "🔒" : "🅿️";
+
+        let btnHtml = "";
+        if (!isReservable) {
+          btnHtml =
+            "<button class='action-btn btn-disabled' disabled>Walk-in Only</button>";
+        } else {
+          if (isOcc) {
+            btnHtml =
+              "<button class='action-btn btn-disabled' disabled>Occupied</button>";
+          } else if (isRes) {
+            btnHtml =
+              `<button class='action-btn btn-cancel' onclick='toggleReservation(${slot.id})'>Cancel Reservation</button>`;
+          } else {
+            btnHtml =
+              `<button class='action-btn btn-reserve' onclick='toggleReservation(${slot.id})'>Reserve Slot</button>`;
+          }
+        }
+
+        card.innerHTML = `
+          <div class="slot-header">
+            <div>Slot ${slot.id}</div>
+            <span class="badge ${badgeClass}">${label}</span>
+          </div>
+          <div class="slot-meta">
+            ${isReservable ? "Reservable (Online + Walk-in)" : "Walk-in Only"}
+          </div>
+          <div class="slot-visual">${icon}</div>
+          ${btnHtml}
+        `;
+
+        area.appendChild(card);
+      });
+    }
+
+    function updateMiniMap(slots) {
+      const map = document.getElementById("miniMap");
+      map.innerHTML = "";
+      slots.forEach(slot => {
+        const div = document.createElement("div");
+        let cls = "mini-free";
+        if (slot.occupied) cls = "mini-occ";
+        else if (slot.reserved) cls = "mini-res";
+
+        div.className = `mini-slot ${cls}`;
+        div.textContent = `S${slot.id}`;
+        div.onclick = () => {
+          const card = document.querySelector(`.slot-card:nth-child(${slot.id})`);
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        };
+        map.appendChild(div);
+      });
+    }
+
+    async function toggleReservation(id) {
+      try {
+        const res = await fetch(`${ESP_IP}/toggle?slot=${id}`);
+        const txt = await res.text();
+        if (!res.ok) {
+          showToast("Error: " + txt, "error");
+        } else {
+          showToast(`Slot ${id}: ${txt}`, "success");
+        }
+      } catch (e) {
+        showToast("Failed to contact ESP32", "error");
+      }
+      fetchStatus();
+      fetchSummary();
+    }
+
+    function downloadReport() {
+      const slots = latestSlots || [];
+      const sum = latestSummary || {};
+      const lines = [];
+
+      const occ = slots.filter(s => s.occupied).length;
+      const res = slots.filter(s => s.reserved).length;
+      const free = slots.length - occ - res;
+
+      lines.push("Metric,Description,Value");
+      lines.push(`Total Slots,"Total number of physical parking slots",${slots.length}`);
+      lines.push(`Free Slots,"Currently available for parking",${free}`);
+      lines.push(`Occupied Slots,"Currently occupied by a vehicle",${occ}`);
+      lines.push(`Reserved Slots,"Booked in advance (online / walk-in)",${res}`);
+      lines.push(`Total Cars,"Total vehicles that have used the parking since last reset",${sum.totalCars ?? 0}`);
+      lines.push(
+        `Average Stay (min),"Average parking duration per vehicle in minutes",${(sum.avgStayMinutes ?? 0).toFixed(2)}`
+      );
+
+      lines.push("");
+      lines.push("Slot Details");
+      lines.push("Slot,Reservable,Current State");
+
+      slots.forEach(s => {
+        const reservable =
+          s.id === 1 || s.id === 2
+            ? "Yes (Online + Walk-in)"
+            : "No (Walk-in Only)";
+
+        let state = "Free";
+        if (s.occupied) state = "Occupied";
+        else if (s.reserved) state = "Reserved";
+
+        lines.push(`${s.id},${reservable},${state}`);
+      });
+
+      const csv = lines.join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "parking_summary.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast("Summary report downloaded", "success");
+    }
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      document.body.classList.toggle("light-theme");
+    });
+
+    window.addEventListener("load", () => {
+      fetchStatus();
+      fetchSummary();
+      setInterval(fetchStatus, 1000);
+      setInterval(fetchSummary, 5000);
+    });
+  </script>
+
+</body>
+</html>
